@@ -38,19 +38,22 @@ stmts:
 
 stmt:
     expr { $$ = $1; $$->eval(globals); } |
-    def_stmt {} |
+    def_stmt {
+        auto& v = $1;
+        auto& id = std::get<std::string>(v->val);
+        globals[id] = v->operands[0];
+    } |
     print_stmt {}
     ;
 
 def_stmt:
-    '(' DEFINE ID expr ')' {        // no return value
+    '(' DEFINE ID expr ')' {    // id type, expr in operands[0]
         auto& expr = $4;
         auto& id = std::get<std::string>($3->val);
         if(expr->type != node_type::func)
-            globals[id] = std::make_shared<node>(expr->eval(globals));
+            $$ = std::make_shared<node>(node_type::id, id, operands_t{std::make_shared<node>(expr->eval(globals))});
         else
-            globals[id] = $4;
-        
+            $$ = std::make_shared<node>(node_type::id, id, operands_t{expr});
     }
     ;
 
@@ -131,25 +134,31 @@ logical_op:
 
 if_expr:
     '(' IF expr expr expr ')' {
-        $$ = std::make_shared<node>(node_type::if_, $3, std::vector<std::shared_ptr<node>>{$4, $5});
+        $$ = std::make_shared<node>(node_type::if_, $3, operands_t{$4, $5});
     }
     ;
 
 func_expr:
-    '(' FUN '(' params ')' expr ')' {
+    '(' FUN '(' params ')' defs expr ')' {
         std::vector<std::string> params{};
         const auto& pnode = *$4;  // pnode is type list, getting params from pnode's operands
         for(const auto& p: pnode.operands)
             params.push_back(std::move(std::get<std::string>(p->val)));
-        
-        // DEBUG:
-        std::cout << "Defining lambda function with params: [";
-        std::string deli = "";
-        for(const auto& p: params) std::cout << std::exchange(deli, ", ") << p;
-        std::cout << "]\n";
 
-        $$ = std::make_shared<node>(node_type::func, std::move(params), std::vector<std::shared_ptr<node>>{}, $6);
+        auto res = std::make_shared<node>(node_type::func, std::move(params), operands_t{}, $7);
+
+        auto& list = $6->operands;
+        for(const auto& v: list) {
+            auto& id = std::get<std::string>(v->val);
+            res->variable_frame[id] = v->operands[0];
+        }
+        $$ = res;
     }
+    ;
+
+defs:
+    defs def_stmt { $$ = $1; $$->operands.push_back($2); } |
+     { $$ = std::make_shared<node>(node_type::list, 0); }
     ;
 
 params:
@@ -163,14 +172,11 @@ func_call:
         func.operands = $3->operands;
         func.type = node_type::id;
         $$ = std::make_shared<node>(std::move(func));
-
-        std::cout << "Call function: " << std::get<std::string>($2->val) << " by name\n";
     } |
     '(' func_expr exprs ')' {
         node func = *$2;
         func.operands = $3->operands;
         func.type = node_type::func_call;
-        std::cout << "Call lambda with " << func.operands.size() << " operands";
         $$ = std::make_shared<node>(std::move(func));
     }
     ;

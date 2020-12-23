@@ -41,6 +41,7 @@ struct node {
 };
 
 using variable_map = std::map<std::string, std::shared_ptr<node>>;
+using operands_t = std::vector<std::shared_ptr<node>>;
 
 // series operations like plus and mul
 template <typename T, typename U, typename binaryFunction>
