@@ -2,7 +2,10 @@ PROGRAM		= mlisp
 OBJS		= mlisp.tab.o lex.yy.o node.o messages.o
 SRCS		= mlisp.tab.cpp lex.yy.c node.cpp messages.cpp
 CC			= g++
-CPPFLAGS	= -Og -std=c++17 -g
+# CPPFLAGS	= -Og -std=c++17 -g
+CPPFLAGS	= -O2 -std=c++17
+# BISONFLAGS	= -dvt --debug
+BISONFLAGS	= -d
 
 all:		$(PROGRAM)
 
@@ -13,7 +16,7 @@ all:		$(PROGRAM)
 			$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 mlisp.tab.cpp mlisp.tab.hpp:	mlisp.y
-								bison -dv mlisp.y -o mlisp.tab.cpp --debug -t
+								bison mlisp.y -o mlisp.tab.cpp $(BISONFLAGS)
 
 lex.yy.c:						mlisp.l
 								flex -I mlisp.l

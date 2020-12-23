@@ -35,7 +35,7 @@ struct node {
         type(type),
         val(val),
         operands(operands),
-        function_body(function_body){};
+        function_body(function_body) {};
 
     node eval(const std::map<std::string, std::shared_ptr<node>>& = {}) const;
 };
