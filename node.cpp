@@ -10,7 +10,40 @@
 #include "node.h"
 #include "mlisp.tab.hpp"
 
-int math_op(op o, std::vector<std::shared_ptr<node>> operands, const variable_map& variables = {}) {
+// series operations like plus and mul
+template <typename T, typename U, typename binaryFunction>
+U series_operation(operands_t operands, T init, binaryFunction b, const variable_map& variables) {
+    if(operands.size() < 2) error_argument(2, operands.size());
+    for(const auto& operand : operands) {
+        if(auto res = operand->eval(variables); holds<T>(res.val))
+            init = b(init, std::get<T>(res.val));
+        else error_type();
+    }
+    return init;
+}
+
+// single operations like minus and div
+template <typename T, typename U, typename binaryFunction>
+U single_operation(operands_t operands, binaryFunction b, const variable_map& variables) {
+    if(operands.size() != 2) error_argument(2, operands.size());
+    auto op1 = operands[0]->eval(variables);
+    auto op2 = operands[1]->eval(variables);
+    if(holds<T>(op1.val) && holds<T>(op2.val))
+        return b(std::get<T>(op1.val), std::get<T>(op2.val));
+    else error_type();
+}
+
+// overload for std::logical_not<bool> operation
+template <typename T, typename U>
+U single_operation(operands_t operands, std::logical_not<bool> b, const variable_map& variables) {
+    if(operands.size() != 1) error_argument(1, operands.size());
+    auto op1 = operands[0]->eval(variables);
+    if(holds<T>(op1.val))
+        return b(std::get<T>(op1.val));
+    else error_type();
+}
+
+int math_op(op o, operands_t operands, const variable_map& variables = {}) {
     switch(o) {
         case op::plus: 
             return series_operation<int, int>(operands, 0, std::plus<int>(), variables);
@@ -28,7 +61,7 @@ int math_op(op o, std::vector<std::shared_ptr<node>> operands, const variable_ma
     return {};
 }
 
-bool logical_op(op o, std::vector<std::shared_ptr<node>> operands, const variable_map& variables = {}) {
+bool logical_op(op o, operands_t operands, const variable_map& variables = {}) {
     switch(o) {
         case op::logical_and: 
             return series_operation<bool, bool>(operands, 1, std::logical_and<bool>(), variables);

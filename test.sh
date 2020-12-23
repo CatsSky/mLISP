@@ -5,15 +5,15 @@ rm ./test_data/*.out
 for f in ./test_data/*.lsp
 do
     filename=$(basename $f)
-    echo "${filename%.*}: "
+    # echo "${filename%.*}: "
     # directing both stdout and stderr to file output
     ./mlisp < $f > $f.out 2> $f.out
-    DIFF=$(diff $f.ans $f.out)
-    if ["$DIFF" == ""]; then
-        echo "[PASSED]"
+    DIFF=$(diff --suppress-common-lines $f.ans $f.out)
+    if [ -n $DIFF ]; then
+        echo "${filename%.*}: [PASSED]"
     else
-        echo "[FAILED]"
+        echo "${filename%.*}: [FAILED]"
         echo "$DIFF"
     fi
-    echo ""
+    # echo ""
 done

@@ -40,40 +40,8 @@ struct node {
     node eval(const std::map<std::string, std::shared_ptr<node>>& = {}) const;
 };
 
+// short alias for member types
 using variable_map = std::map<std::string, std::shared_ptr<node>>;
 using operands_t = std::vector<std::shared_ptr<node>>;
-
-// series operations like plus and mul
-template <typename T, typename U, typename binaryFunction>
-U series_operation(std::vector<std::shared_ptr<node>> operands, T init, binaryFunction b, const variable_map& variables) {
-    if(operands.size() < 2) error_argument(2, operands.size());
-    for(const auto& operand : operands) {
-        if(auto res = operand->eval(variables); holds<T>(res.val))
-            init = b(init, std::get<T>(res.val));
-        else error_type();
-    }
-    return init;
-}
-
-// single operations like minus and div
-template <typename T, typename U, typename binaryFunction>
-U single_operation(std::vector<std::shared_ptr<node>> operands, binaryFunction b, const variable_map& variables) {
-    if(operands.size() != 2) error_argument(2, operands.size());
-    auto op1 = operands[0]->eval(variables);
-    auto op2 = operands[1]->eval(variables);
-    if(holds<T>(op1.val) && holds<T>(op2.val))
-        return b(std::get<T>(op1.val), std::get<T>(op2.val));
-    else error_type();
-}
-
-// overload for std::logical_not<bool> operation
-template <typename T, typename U>
-U single_operation(std::vector<std::shared_ptr<node>> operands, std::logical_not<bool> b, const variable_map& variables) {
-    if(operands.size() != 1) error_argument(1, operands.size());
-    auto op1 = operands[0]->eval(variables);
-    if(holds<T>(op1.val))
-        return b(std::get<T>(op1.val));
-    else error_type();
-}
 
 #endif
