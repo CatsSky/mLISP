@@ -12,7 +12,7 @@
 
 // series operations like plus and mul
 template <typename T, typename U, typename binaryFunction>
-U series_operation(operands_t operands, T init, binaryFunction b, const variable_map& variables) {
+U series_operation(const operands_t& operands, T init, binaryFunction b, const variable_map& variables) {
     if(operands.size() < 2) error_argument(2, operands.size());
     for(const auto& operand : operands) {
         if(auto res = operand->eval(variables); holds<T>(res.val))
@@ -24,7 +24,7 @@ U series_operation(operands_t operands, T init, binaryFunction b, const variable
 
 // single operations like minus and div
 template <typename T, typename U, typename binaryFunction>
-U single_operation(operands_t operands, binaryFunction b, const variable_map& variables) {
+U single_operation(const operands_t& operands, binaryFunction b, const variable_map& variables) {
     if(operands.size() != 2) error_argument(2, operands.size());
     auto op1 = operands[0]->eval(variables);
     auto op2 = operands[1]->eval(variables);
@@ -35,7 +35,7 @@ U single_operation(operands_t operands, binaryFunction b, const variable_map& va
 
 // overload for std::logical_not<bool> operation
 template <typename T, typename U>
-U single_operation(operands_t operands, std::logical_not<bool> b, const variable_map& variables) {
+U single_operation(const operands_t& operands, std::logical_not<bool> b, const variable_map& variables) {
     if(operands.size() != 1) error_argument(1, operands.size());
     auto op1 = operands[0]->eval(variables);
     if(holds<T>(op1.val))
@@ -43,7 +43,7 @@ U single_operation(operands_t operands, std::logical_not<bool> b, const variable
     else error_type();
 }
 
-int math_op(op o, operands_t operands, const variable_map& variables = {}) {
+int math_op(op o, const operands_t& operands, const variable_map& variables = {}) {
     switch(o) {
         case op::plus: 
             return series_operation<int, int>(operands, 0, std::plus<int>(), variables);
@@ -61,7 +61,7 @@ int math_op(op o, operands_t operands, const variable_map& variables = {}) {
     return {};
 }
 
-bool logical_op(op o, operands_t operands, const variable_map& variables = {}) {
+bool logical_op(op o, const operands_t& operands, const variable_map& variables = {}) {
     switch(o) {
         case op::logical_and: 
             return series_operation<bool, bool>(operands, 1, std::logical_and<bool>(), variables);
@@ -70,12 +70,12 @@ bool logical_op(op o, operands_t operands, const variable_map& variables = {}) {
         case op::logical_not:
             return single_operation<bool, bool>(operands, std::logical_not<bool>(), variables);
 
+        case op::equal: 
+            return series_operation<int, bool>(operands, 1, std::equal_to<int>(), variables);
         case op::greater:
             return single_operation<int, bool>(operands, std::greater<int>(), variables);
         case op::less:
             return single_operation<int, bool>(operands, std::less<int>(), variables);
-        case op::equal: 
-            return series_operation<int, bool>(operands, 1, std::equal_to<int>(), variables);
     }
     
     return {};
