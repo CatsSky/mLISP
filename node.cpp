@@ -55,10 +55,6 @@ node eval_if(node& pred, node& expr1, node& expr2, const variable_map& variables
 
 node node::eval(const variable_map& variables) const {
     switch(this->type) {
-        // case node_type::integer:
-        //     return std::get<int>(this->val);
-        // case node_type::boolean:
-        //     return std::get<bool>(this->val);
         case node_type::id:
             if(auto& id = std::get<std::string>(this->val); variables.count(id)) {
                 node n = *(variables.at(id));
