@@ -48,17 +48,17 @@ bool logical_op(op o, std::vector<std::shared_ptr<node>> operands, const variabl
     return {};
 }
 
-std::variant<int, bool> eval_if(node& pred, node& expr1, node& expr2, const variable_map& variables = {}) {
-    if(std::get<bool>(pred.eval(variables))) return expr1.eval(variables);
+node eval_if(node& pred, node& expr1, node& expr2, const variable_map& variables = {}) {
+    if(std::get<bool>(pred.eval(variables).val)) return expr1.eval(variables);
     else return expr2.eval(variables);
 }
 
-std::variant<int, bool> node::eval(const variable_map& variables) const {
+node node::eval(const variable_map& variables) const {
     switch(this->type) {
-        case node_type::integer:
-            return std::get<int>(this->val);
-        case node_type::boolean:
-            return std::get<bool>(this->val);
+        // case node_type::integer:
+        //     return std::get<int>(this->val);
+        // case node_type::boolean:
+        //     return std::get<bool>(this->val);
         case node_type::id:
             if(auto& id = std::get<std::string>(this->val); variables.count(id)) {
                 node n = *(variables.at(id));
@@ -71,20 +71,26 @@ std::variant<int, bool> node::eval(const variable_map& variables) const {
                 error_undefined(id);
 
         case node_type::math_op:
-            return math_op(std::get<op>(this->val), this->operands, variables);
+            return node(node_type::integer, math_op(std::get<op>(this->val), this->operands, variables));
         case node_type::logical_op:
-            return logical_op(std::get<op>(this->val), this->operands, variables);
+            return node(node_type::boolean, logical_op(std::get<op>(this->val), this->operands, variables));
 
         case node_type::if_: {
             const auto& predicate = std::get<std::shared_ptr<node>>(this->val);
             return eval_if(*predicate, *this->operands[0], *this->operands[1], variables);
         }
         
-        // case node_type::func: {
-        //     auto n = *this;
-        //     n.type = node_type::func_call;
-        //     return n.eval(variables);
-        // }
+        case node_type::func: {
+            auto n = *this;
+            const auto& params = std::get<std::vector<std::string>>(n.val);
+            for(const auto& [vname, vval]: variables)
+                if(std::find(params.begin(), params.end(), vname) == params.end()) {
+                    // variable is not in parameter, adding to the function frame
+                    // TODO: consider substituting instead of extra storage
+                    n.variable_frame[vname] = vval;
+                }
+            return n;
+        }
 
         case node_type::func_call: {
             const auto& params = std::get<std::vector<std::string>>(this->val);
@@ -93,15 +99,14 @@ std::variant<int, bool> node::eval(const variable_map& variables) const {
             if(param_count != operand_count) error_argument(param_count, operand_count);
 
             variable_map vf = variables;     // builds new function variable frame
+            for(const auto& [vname, vval]: this->variable_frame)
+                vf[vname] = vval;
             for(int i = 0; i < param_count; ++i)
-                if(this->operands[i]->type == node_type::func)
-                    vf[params[i]] = this->operands[i];
-                else
-                    vf[params[i]] = std::make_shared<node>(this->operands[i]->eval(variables));
+                vf[params[i]] = std::make_shared<node>(this->operands[i]->eval(variables));
             
             return this->function_body->eval(vf);
         }
 
     }
-    return {};
+    return *this;
 }

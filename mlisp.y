@@ -57,13 +57,13 @@ def_stmt:
 print_stmt:
     '(' PRINT_NUMBER expr ')' {     // no return value
         auto& e = $3;
-        if(auto res = $3->eval(globals); holds<int>(res))
-            std::cout << std::get<int>(res) << std::endl;
+        if(auto res = $3->eval(globals); res.type == node_type::integer)
+            std::cout << std::get<int>(res.val) << std::endl;
         else error_type();
     } |
     '(' PRINT_BOOLEAN expr ')' {    // no return value
-        if(auto res = $3->eval(globals); holds<bool>(res))
-            std::cout << (std::get<bool>(res) ? "#t" : "#f") << std::endl;
+        if(auto res = $3->eval(globals); res.type == node_type::boolean)
+            std::cout << (std::get<bool>(res.val) ? "#t" : "#f") << std::endl;
         else error_type();
     }
     ;
@@ -182,7 +182,7 @@ exprs:
 %%
 
 int main(void) {
-    yydebug = 1;
+    // yydebug = 1;
     yyparse();
     return 0;
 }
