@@ -26,3 +26,6 @@ mlisp:							$(OBJS)
 
 clean:
 								rm -f $(OBJS) mlisp.tab.cpp mlisp.tab.hpp lex.yy.c mlisp.output
+
+test:							$(PROGRAM)
+								sh test.sh

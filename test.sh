@@ -9,7 +9,8 @@ do
     # directing both stdout and stderr to file output
     ./mlisp < $f > $f.out 2> $f.out
     DIFF=$(diff --suppress-common-lines $f.ans $f.out)
-    if [ -n $DIFF ]; then
+    if [ -z "$DIFF" ]
+    then
         echo "${filename%.*}: [PASSED]"
     else
         echo "${filename%.*}: [FAILED]"
