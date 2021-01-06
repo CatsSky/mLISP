@@ -1,19 +1,17 @@
-#!/bin/sh
-
-rm ./test_data/*.out
+#!/bin/bash
 
 for f in ./test_data/*.lsp
 do
-    filename=$(basename $f)
+    filename=$(basename -s .lsp $f)
     # echo "${filename%.*}: "
     # directing both stdout and stderr to file output
-    ./mlisp < $f > $f.out 2> $f.out
-    DIFF=$(diff --suppress-common-lines $f.ans $f.out)
+    # ./mlisp < $f > $f.out 2> $f.out
+    DIFF=$(./mlisp < $f |& diff -y --width=80 --suppress-common-lines $f.ans -)
     if [ -z "$DIFF" ]
     then
-        echo "${filename%.*}: [PASSED]"
+        echo "${filename}: [PASSED]"
     else
-        echo "${filename%.*}: [FAILED]"
+        echo "${filename}: [FAILED]"
         echo "$DIFF"
     fi
     # echo ""
